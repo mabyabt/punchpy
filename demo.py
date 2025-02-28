@@ -184,17 +184,17 @@ class RFIDReader:
 # Validate card UID format
 def validate_card_uid(card_uid: str) -> bool:
     """
-    Validate that card UID is in an acceptable format.
-    Most RFID cards have hexadecimal UIDs (0-9, A-F).
+    Validate that card UID is not empty and has a reasonable length.
+    Accepts all characters including special characters like 'ö'.
     """
-    # Allow alphanumeric characters and some separators
     if not card_uid:
         return False
     
-    # Simple check to make sure there's at least some valid content
-    # This allows any alphanumeric characters and common separators
-    valid_chars = set("0123456789ABCDEFabcdef-:.")
-    return all(c in valid_chars for c in card_uid)
+    # Only check that UID is not too long or too short
+    if len(card_uid) < 2 or len(card_uid) > 64:
+        return False
+    
+    return True
 
 # Command line interface
 def print_header():
@@ -221,16 +221,11 @@ def main():
         if choice == "1":
             # Add User
             print("\n--- ADD USER ---")
-            print("Enter Card UID (format example: AB:CD:EF:12 or ABCDEF12):")
-            card_uid = input("> ").strip().upper()
-            
-            if not card_uid:
-                print("Card UID cannot be empty.")
-                input("\nPress Enter to continue...")
-                continue
+            print("Enter Card UID (can include special characters like 'öö122ö8333'):")
+            card_uid = input("> ").strip()
             
             if not validate_card_uid(card_uid):
-                print("Invalid UID format. UIDs typically contain hexadecimal characters (0-9, A-F).")
+                print("Invalid UID format. UID must be between 2 and 64 characters.")
                 input("\nPress Enter to continue...")
                 continue
                 
@@ -249,10 +244,10 @@ def main():
             print("\n--- USER LIST ---")
             users = list_all_users()
             if users:
-                print(f"{'ID':<5} {'Card UID':<20} {'Name':<30}")
-                print("-" * 55)
+                print(f"{'ID':<5} {'Card UID':<25} {'Name':<30}")
+                print("-" * 60)
                 for user_id, card_uid, name in users:
-                    print(f"{user_id:<5} {card_uid:<20} {name:<30}")
+                    print(f"{user_id:<5} {card_uid:<25} {name:<30}")
             else:
                 print("No users found.")
             input("\nPress Enter to continue...")
@@ -274,7 +269,7 @@ def main():
             # Start RFID Scanner
             print("\n--- RFID SCANNER ---")
             print("RFID scanner activated. Enter 'scan <CARD_UID>' to simulate a card scan.")
-            print("Examples: 'scan AB:CD:EF:12' or 'scan ABCDEF12'")
+            print("Example: 'scan öö122ö8333'")
             print("Enter 'exit' to return to the main menu.")
             
             rfid_reader.start()
@@ -286,7 +281,7 @@ def main():
                     break
                 elif scan_input.lower().startswith('scan '):
                     _, card_uid = scan_input.split(' ', 1)
-                    card_uid = card_uid.strip().upper()
+                    card_uid = card_uid.strip()
                     if validate_card_uid(card_uid):
                         rfid_reader.process_scan(card_uid)
                     else:
