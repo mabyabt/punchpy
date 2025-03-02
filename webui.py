@@ -422,8 +422,9 @@ def render_users_tab():
             else:
                 ui.notify('Failed to delete user', type='negative')
         
+        with ui.dialog() as dialog
+        # admin_gui.py (continued)
         with ui.dialog() as dialog, ui.card():
-          # admin_gui.py (continued)
             ui.label(f"Delete User: {user['name']}").classes('text-lg font-bold')
             ui.label('Are you sure you want to delete this user? This will also remove all their clock events.')
             
@@ -606,13 +607,9 @@ def render_admin_tab():
         
         refresh_admin_table()
 
-# Start the application
-def start_admin_gui():
-    setup_admin_database()
+# Setup the database on startup
+setup_admin_database()
+
+# Run the application
+if __name__ in {"__main__", "__mp_main__"}:
     ui.run(title='Clock In/Out Admin', host='0.0.0.0', port=8080)
-
-if __name__ == "__main__":
-    start_admin_gui()
-
-
-          
