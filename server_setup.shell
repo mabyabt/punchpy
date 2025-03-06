@@ -1,0 +1,55 @@
+#!/bin/bash
+
+# Update and install necessary packages
+sudo apt update -y
+sudo apt install nginx php-fpm -y
+
+# Enable and start services
+sudo systemctl enable nginx php-fpm
+sudo systemctl start nginx php-fpm
+
+# Ask the user for the PHP file location
+echo "Enter the full path of the PHP file to host:"
+read PHP_FILE
+
+# Ensure the file exists
+if [ ! -f "$PHP_FILE" ]; then
+    echo "Error: File not found! Exiting."
+    exit 1
+fi
+
+# Set up web directory as the current directory of the PHP file
+WEB_DIR=$(dirname "$PHP_FILE")
+
+# Set proper permissions
+sudo chown -R www-data:www-data "$WEB_DIR"
+sudo chmod -R 755 "$WEB_DIR"
+
+# Configure Nginx for PHP
+NGINX_CONF="/etc/nginx/sites-available/default"
+sudo tee $NGINX_CONF > /dev/null <<EOL
+server {
+    listen 80;
+    root $WEB_DIR;
+    index index.php index.html index.htm;
+    server_name _;
+
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php-fpm.sock;
+        fastcgi_param SCRIPT_FILENAME \$document_root\$fastcgi_script_name;
+        include fastcgi_params;
+    }
+}
+EOL
+
+# Restart Nginx to apply changes
+sudo systemctl restart nginx
+
+# Display the IP address of the server
+echo "Web server is up and running. You can access your PHP file at:"
+hostname -I | awk '{print "http://"$1 "/"}'
